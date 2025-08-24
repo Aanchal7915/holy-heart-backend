@@ -2,7 +2,7 @@ const express=require('express');
 const mongoose=require('mongoose');
 const cors=require('cors');
 const appointmentRoute=require('./routes/appointment');
-const userRoute=require('./routes/User');
+const userRoute=require('./routes/user');
 const authRoute=require('./routes/auth');
 const dotenv=require('dotenv');
 dotenv.config();
