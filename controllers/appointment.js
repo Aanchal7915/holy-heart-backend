@@ -3,13 +3,9 @@ const Appointment = require('../models/Appointment'); // Adjust path if needed
 exports.bookAppointment = async (req, res) => {
     try {
         let {
-            patientName,
-            patientEmail,
-            patientPhone,
             appointmentDate,
             Message,
             serviceType,
-            status
         } = req.body;
 
         // Convert 'DD-MM-YYYY' to 'YYYY-MM-DD'
@@ -21,27 +17,23 @@ exports.bookAppointment = async (req, res) => {
 
         const appointment = new Appointment({
             patientId: req.user.userId, // Add patientId from authorized user
-            patientName,
-            patientEmail,
-            patientPhone,
             appointmentDate,
             Message,
-            serviceType,
-            status
+            serviceType
         });
 
         await appointment.save();
         res.status(201).json({ message: 'Appointment booked successfully', appointment });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to book appointment', details: error.message });
+        console.error('AppointmentController - bookAppointment:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 }
-
 
 exports.getAppointments = async (req, res) => {
     try {
         // Filtering
-        const { appointmentDate, status, serviceType, sort = 'desc', page = 1, limit = 10 } = req.query;
+        const { appointmentDate, status, serviceType, sort = 'desc', page = 1, limit = 1 } = req.query;
         const filter = {};
         if (appointmentDate) {
             // Accepts 'YYYY-MM-DD' or 'DD-MM-YYYY'
@@ -68,10 +60,24 @@ exports.getAppointments = async (req, res) => {
         // Sorting
         const sortOrder = sort === 'asc' ? 1 : -1;
 
-        const appointments = await Appointment.find(filter)
+        const appointmentsRaw = await Appointment.find(filter)
             .sort({ appointmentDate: sortOrder })
             .skip(skip)
-            .limit(parseInt(limit));
+            .limit(parseInt(limit))
+            .populate('patientId', 'name email phoneNu');
+
+        const appointments = appointmentsRaw.map(app => {
+            const obj = app.toObject();
+            const patientDetail = obj.patientId;
+            delete obj.patientId;
+            console.log(obj);
+            return {...obj, 
+                patientName: patientDetail.name, 
+                patientEmail: patientDetail.email, 
+                patientPhone: patientDetail.phoneNu,
+                userId: patientDetail._id 
+            };
+        });
 
         // Total count for pagination
         const total = await Appointment.countDocuments(filter);
@@ -84,7 +90,8 @@ exports.getAppointments = async (req, res) => {
             totalPages: Math.ceil(total / parseInt(limit))
         });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch appointments', details: error.message });
+        console.error('AppointmentController - getAppointments:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 }
 
@@ -107,6 +114,7 @@ exports.updateAppointmentStatus = async (req, res) => {
         }
         res.status(200).json({ message: 'Appointment status updated', appointment });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to update appointment status', details: error.message });
+        console.error('AppointmentController - updateAppointmentStatus:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 };

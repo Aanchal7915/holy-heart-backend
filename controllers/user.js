@@ -65,3 +65,28 @@ exports.getUserAppointments = async (req, res) => {
     }
 };
 
+exports.updateBlockStatus = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { isBlocked } = req.body;
+
+        if (typeof isBlocked !== 'boolean') {
+            return res.status(400).json({ error: 'isBlocked must be a boolean' });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { isBlocked },
+            { new: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.status(200).json({ message: `User ${isBlocked ? 'blocked' : 'unblocked'} successfully`, user });
+    } catch (error) {
+        console.error('AuthController - updateBlockStatus:', error);
+        res.status(500).json({ error: 'Server error', message: 'Failed to update block status' });
+    }
+};

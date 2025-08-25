@@ -6,7 +6,7 @@ const { auth } = require('../middleware/auth');
 
 const route=express.Router();
 
-route.get('/', auth(['admin']), getAppointments);
+route.get('/', /*auth(['admin']),*/ getAppointments);
 
 route.post('/', auth(['user']), bookAppointment);
 

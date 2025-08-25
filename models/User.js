@@ -13,6 +13,11 @@ const userSchema = new Schema({
         unique: true,
         trim: true
     },
+    phoneNu:{
+        type: String,
+        required: true,
+        trim: true
+    },
     password: {
         type: String,
         required: true
@@ -21,6 +26,10 @@ const userSchema = new Schema({
         type: String,
         enum: ['user', 'admin'],
         default: 'user'
+    },
+     isBlocked: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

@@ -8,21 +8,6 @@ const appointmentSchema = new Schema({
         ref: 'User',
         required: true
     },
-    patientName: {  
-        type: String,
-        required: true,
-        trim: true
-    },
-    patientEmail:{
-        type: String,
-        required: true,
-        trim: true
-    },
-    patientPhone:{
-        type: String,
-        required: true,
-        trim: true
-    },
     appointmentDate: {
         type: Date,
         required: true
