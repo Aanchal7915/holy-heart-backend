@@ -15,7 +15,8 @@ exports.getUserSummary = async (req, res) => {
     ]);
 
     res.json({ totalUsers, blockedUsers, admins, growth: last30Days });
-  } catch (err) {
+  } catch (error) {
+    console.error('AdminController - getUserSummary:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -32,7 +33,8 @@ exports.getAppointmentSummary = async (req, res) => {
     const past = await Appointment.countDocuments({ appointmentDate: { $lt: new Date() } });
 
     res.json({ totalAppointments, pending, confirmed, cancelled, upcoming, past });
-  } catch (err) {
+  } catch (error) {
+    console.error('AdminController - getAppointmentSummary:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -47,7 +49,8 @@ exports.getAppointmentTrends = async (req, res) => {
       { $sort: { _id: 1 } }
     ]);
     res.json(trends);
-  } catch (err) {
+  } catch (error) {
+    console.error('AdminController - getAppointmentTrends:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -61,6 +64,7 @@ exports.getPopularServices = async (req, res) => {
     ]);
     res.json(services);
   } catch (err) {
+    console.error('AdminController - getPopularServices:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -81,7 +85,8 @@ exports.getPatientRanking = async (req, res) => {
       { $project: { name: "$patient.name", email: "$patient.email", count: 1 } }
     ]);
     res.json(ranking);
-  } catch (err) {
+  } catch (error) {
+    console.error('AdminController - getPatientRanking:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };

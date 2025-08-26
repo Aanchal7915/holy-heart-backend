@@ -33,22 +33,20 @@ exports.bookAppointment = async (req, res) => {
 exports.getAppointments = async (req, res) => {
     try {
         // Filtering
-        const { appointmentDate, status, serviceType, sort = 'desc', page = 1, limit = 1 } = req.query;
+        const { startDate, endDate, status, serviceType, sort = 'desc', page = 1, limit = 1 } = req.query;
         const filter = {};
-        if (appointmentDate) {
-            // Accepts 'YYYY-MM-DD' or 'DD-MM-YYYY'
-            let dateObj;
-            if (/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)) {
-                dateObj = new Date(appointmentDate);
-            } else if (/^\d{2}-\d{2}-\d{4}$/.test(appointmentDate)) {
-                const [day, month, year] = appointmentDate.split('-');
-                dateObj = new Date(`${year}-${month}-${day}`);
+        // Date range filtering
+        if (startDate || endDate) {
+            filter.appointmentDate = {};
+            if (startDate) {
+                const start = new Date(startDate);
+                start.setHours(0,0,0,0);
+                filter.appointmentDate.$gte = start;
             }
-            if (dateObj) {
-                // Filter for the whole day
-                const start = new Date(dateObj.setHours(0,0,0,0));
-                const end = new Date(dateObj.setHours(23,59,59,999));
-                filter.appointmentDate = { $gte: start, $lte: end };
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23,59,59,999);
+                filter.appointmentDate.$lte = end;
             }
         }
         if (status) filter.status = status;
@@ -59,7 +57,6 @@ exports.getAppointments = async (req, res) => {
 
         // Sorting
         const sortOrder = sort === 'asc' ? 1 : -1;
-
         const appointmentsRaw = await Appointment.find(filter)
             .sort({ appointmentDate: sortOrder })
             .skip(skip)
@@ -70,7 +67,7 @@ exports.getAppointments = async (req, res) => {
             const obj = app.toObject();
             const patientDetail = obj.patientId;
             delete obj.patientId;
-            console.log(obj);
+            
             return {...obj, 
                 patientName: patientDetail.name, 
                 patientEmail: patientDetail.email, 

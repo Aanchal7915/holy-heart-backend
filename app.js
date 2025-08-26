@@ -2,8 +2,11 @@ const express=require('express');
 const mongoose=require('mongoose');
 const cors=require('cors');
 const appointmentRoute=require('./routes/appointment');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 const userRoute=require('./routes/user');
 const authRoute=require('./routes/auth');
+const adminRoute=require('./routes/admin');
 const dotenv=require('dotenv');
 dotenv.config();
 
@@ -21,7 +24,30 @@ app.use(cors({
 app.use('/appointments',appointmentRoute);
 app.use('/user',userRoute);
 app.use('/auth',authRoute);
+app.use("/admin", adminRoute);
 
+// Swagger definition
+const swaggerDefinition = {
+    openapi: '3.0.0',
+    info: {
+        title: 'Holy Heart Backend API',
+        version: '1.0.0',
+        description: 'API documentation for Holy Heart Backend',
+    },
+    servers: [
+        { url: 'http://localhost:3000', description: 'Local server' }
+    ],
+};
+
+const swaggerOptions = {
+    swaggerDefinition,
+    apis: ['./routes/*.js'], // Path to the API docs
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// Serve Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/',(req,res)=>{
     res.send('Welcome to Holy Heart Backend');
@@ -37,7 +63,7 @@ mongoose.connect(mongoDbUrl, {
     console.error('Error connecting to MongoDB', err);
 });
 
-app.listen(8080, ()=>{
+app.listen(8080, '0.0.0.0', ()=>{
     console.log('Server started on port 8080');
 });
 
