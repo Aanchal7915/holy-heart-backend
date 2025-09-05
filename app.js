@@ -7,6 +7,9 @@ const swaggerUi = require('swagger-ui-express');
 const userRoute=require('./routes/user');
 const authRoute=require('./routes/auth');
 const adminRoute=require('./routes/admin');
+const serviceRoute=require('./routes/service');
+const doctorRoute=require('./routes/doctor');
+const path = require("path");
 const dotenv=require('dotenv');
 dotenv.config();
 
@@ -14,6 +17,8 @@ dotenv.config();
 const app=express();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use(cors({
   origin: "*", // frontend URL
@@ -21,10 +26,13 @@ app.use(cors({
   credentials: true // allow cookies/auth headers if needed
 }));
 
+
 app.use('/appointments',appointmentRoute);
 app.use('/user',userRoute);
 app.use('/auth',authRoute);
 app.use("/admin", adminRoute);
+app.use("/services", serviceRoute);
+app.use("/doctors", doctorRoute);
 
 // Swagger definition
 const swaggerDefinition = {

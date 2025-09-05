@@ -16,7 +16,7 @@ exports.bookAppointment = async (req, res) => {
 
 
         const appointment = new Appointment({
-            patientId: req.user.userId, // Add patientId from authorized user
+            patient: req.user.userId, // Add patientId from authorized user
             appointmentDate,
             Message,
             serviceType
@@ -61,12 +61,12 @@ exports.getAppointments = async (req, res) => {
             .sort({ appointmentDate: sortOrder })
             .skip(skip)
             .limit(parseInt(limit))
-            .populate('patientId', 'name email phoneNu');
+            .populate('patient', 'name email phoneNu');
 
         const appointments = appointmentsRaw.map(app => {
             const obj = app.toObject();
-            const patientDetail = obj.patientId;
-            delete obj.patientId;
+            const patientDetail = obj.patient;
+            delete obj.patient;
             
             return {...obj, 
                 patientName: patientDetail.name, 

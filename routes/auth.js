@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const {register, login} = require('../controllers/auth');
+const {register, login,
+forgotPassword,verifyEmail,resetPassword,resendVerificationEmail
+} = require('../controllers/auth');
 
 
 /**
@@ -64,6 +66,10 @@ router.post('/register',register);
  */
 // Login
 router.post('/login', login);
+router.post('/forgot-password', forgotPassword)
+router.post('/reset-password/', resetPassword)
+router.post('/verify-email/:id/:token', verifyEmail)
+router.post('/resend-verification', resendVerificationEmail)
 
 
 module.exports = router;

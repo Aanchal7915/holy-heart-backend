@@ -7,15 +7,24 @@ const userSchema = new Schema({
         required: true,
         trim: true
     },
+    gender: {
+        type: String,
+        enum:['male', 'female', 'prefer not to say'],
+        default: 'prefer not to say'
+    },
     email: {
         type: String,
         required: true,
         unique: true,
         trim: true
     },
-    phoneNu:{
+    phoneNu: {
         type: String,
         required: true,
+        trim: true
+    },
+    address: {
+        type: String,
         trim: true
     },
     password: {
@@ -24,12 +33,32 @@ const userSchema = new Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'admin'],
+        enum: ['user', 'admin', 'doctor'],
         default: 'user'
     },
-     isBlocked: {
+    image: {
+        type: String,
+        trim: true
+    },
+    isBlocked: {
         type: Boolean,
         default: false
+    }, 
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    emailVerificationToken: {
+        type: String
+    },
+    emailVerificationExpires: {
+        type: Date
+    },
+    resetPasswordToken: {
+        type: String
+    },
+    resetPasswordExpires: {
+        type: Date
     }
 }, { timestamps: true });
 
