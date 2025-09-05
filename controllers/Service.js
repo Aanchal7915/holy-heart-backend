@@ -36,7 +36,7 @@ exports.updateService = async (req, res) => {
         if(status && ['active', 'inactive'].includes(status)) updates.status=status;
 
         
-        if(file) updates.image=`${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+        if(req.file) updates.image=`${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
 
         const service = await Service.findByIdAndUpdate(id, updates, { new: true });
         if (!service) {
