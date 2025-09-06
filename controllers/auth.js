@@ -275,7 +275,8 @@ exports.forgotPassword = async (req, res) => {
 		user.resetPasswordExpires = resetTokenExpiry;
 		await user.save();
 		const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${user._id}/${resetToken}`;
-		await mailSender(email, 'Password Reset', `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 1 hour.</p>`);
+		const ress=await mailSender(email, 'Password Reset', `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 1 hour.</p>`);
+		console.log("mail sent response:",ress);
 		res.json({ message: 'If the email exists, a reset link was sent.' });
 	}
 	catch (err) {

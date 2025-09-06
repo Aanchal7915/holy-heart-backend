@@ -1,5 +1,6 @@
 const Service = require('../models/Service');
 const Appointment = require('../models/Appointment');
+const removeFile = require('../utils/removeFile');
 
 
 // Add a new service
@@ -82,7 +83,7 @@ exports.getService = async (req, res) => {
 exports.getAllServices = async (req, res) => {
     try {
         // Find all active services
-        const services = await Service.find({ status:{$ne: 'deleted'} });
+        const services = await Service.find({ status:'active' });
 
         // For each service, count related appointments
         // const servicesWithAppointmentCount = await Promise.all(

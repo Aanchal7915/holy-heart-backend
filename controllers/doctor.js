@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const DoctorSlot = require('../models/DoctorSlot'); // Make sure you have a Slot model
-// Check if service exists
+const removeFile = require('../utils/removeFile');
 const Service = require('../models/Service');
 const bcrypt = require('bcrypt');
 

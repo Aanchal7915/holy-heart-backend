@@ -17,6 +17,6 @@ router.delete('/:id', auth(['admin']), serviceController.deleteService);
 router.get('/:id', auth(['admin', 'user']), serviceController.getService);
 
 // Get all services
-router.get('/', auth(['admin', 'user']), serviceController.getAllServices);
+router.get('/', serviceController.getAllServices);
 
 module.exports = router;

@@ -1,49 +1,19 @@
+// models/Appointment.js
 const mongoose = require('mongoose');
 
-const Schema = mongoose.Schema;
-
-const appointmentSchema = new Schema({
-    patient: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    doctor: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    appointmentDate: {
-        type: Date,
-        required: true
-    },
-    MessageFromUser: {
-        type: String,
-        trim: true
-    },
-    MessageFromDoctor: {
-        type: String,
-        trim: true
-    },
-    AppointmentMessage: {
-        type: String,
-        trim: true
-    },
-    serviceType: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Service',
-        required: true
-    },
-    status: {
-        type: String,
-        enum: ['Pending', 'Scheduled', 'Cancelled'],
-        default: 'Pending'
-    },
-    document: [
-        {
-            title: { type: String, trim: true, required: true },
-            link: { type: String, trim: true, required: true }
-        }
-    ]
+const appointmentSchema = new mongoose.Schema({
+  doctor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  patient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  service: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true },
+  start: { type: Date, required: true },
+  end: { type: Date, required: true },
+  charge: { type: Number, default: 0 },
+  status: { type: String, enum: ['reserved','confirmed','cancelled','expired','completed'], default: 'reserved' },
+  reservationExpiresAt: { type: Date }
 }, { timestamps: true });
+
+// index to speed lookups and overlap checks
+appointmentSchema.index({ doctor: 1, start: 1, end: 1 });
+appointmentSchema.index({ reservationExpiresAt: 1 });
 
 module.exports = mongoose.model('Appointment', appointmentSchema);

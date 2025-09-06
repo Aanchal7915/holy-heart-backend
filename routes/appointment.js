@@ -6,11 +6,12 @@
  */
 
 const express = require('express');
-const { bookAppointment, getAppointments, updateAppointmentStatus } = require('../controllers/appointment');
+const { bookAppointment, getAppointments, updateAppointmentStatus, automaticBookAcrossDoctors } = require('../controllers/appointment');
 const { auth } = require('../middleware/auth');
+const { automaticSchedule } = require('../controllers/test');
 
 
-const route=express.Router();
+const route = express.Router();
 
 /**
  * @swagger
@@ -101,5 +102,18 @@ route.post('/', auth(['user']), bookAppointment);
  */
 route.put('/:id/status', auth(['admin']), updateAppointmentStatus);
 
+route.post('/auto-book', auth(['user']), async (req, res) => {
+  try {
+    const patientId=req.user.userId;
+    const { serviceId, preferredDoctorId, preferredDateISO, preferredTimeHHMM } = req.body;
+    const result = await automaticSchedule({ serviceId, patientId, preferredDoctorId, preferredDateISO, preferredTimeHHMM });
+    if (!result.success) return res.status(409).json(result);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success:false, message: err.message });
+  }
+});
 
-module.exports=route;
+
+module.exports = route;
