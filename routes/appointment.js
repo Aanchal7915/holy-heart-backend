@@ -9,6 +9,7 @@ const express = require('express');
 const { bookAppointment, getAppointments, updateAppointmentStatus, automaticBookAcrossDoctors } = require('../controllers/appointment');
 const { auth } = require('../middleware/auth');
 const { automaticSchedule } = require('../controllers/test');
+const Service = require('../models/Service');
 
 
 const route = express.Router();
@@ -113,6 +114,9 @@ route.post('/auto-book', auth(['user']), async (req, res) => {
 
       console.log(preferredDateISO)
     }
+
+    // await Service.findById(serviceId); // to ensure service exists
+
 
     const result = await automaticSchedule({ serviceId, patientId, preferredDoctorId, preferredDateISO, preferredTimeHHMM });
     if (!result.success) return res.status(409).json(result);

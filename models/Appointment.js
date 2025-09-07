@@ -9,7 +9,8 @@ const appointmentSchema = new mongoose.Schema({
   end: { type: Date, required: true },
   charge: { type: Number, default: 0 },
   status: { type: String, enum: ['reserved','confirmed','cancelled','expired','completed'], default: 'reserved' },
-  reservationExpiresAt: { type: Date }
+  reservationExpiresAt: { type: Date },
+  images: [{ type: String }],
 }, { timestamps: true });
 
 // index to speed lookups and overlap checks

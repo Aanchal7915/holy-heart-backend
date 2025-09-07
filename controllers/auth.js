@@ -45,7 +45,7 @@ exports.register = async (req, res) => {
             return res.status(400).json({ error: parseResult.error.issues.map(e => e.message).join(', ') });
         }
 
-        const { name, email, phoneNu, password, role = 'user' }  = parseResult.data;
+        const { name, email, phoneNu, password, role = 'user', gender='prefer not to say' }  = parseResult.data;
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ error: 'Email already exists' });
@@ -61,6 +61,7 @@ exports.register = async (req, res) => {
 			phoneNu, 
 			password: hashedPassword, 
 			role,
+			gender,
 			emailVerificationToken,
 			emailVerificationExpires
 		});

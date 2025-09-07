@@ -20,6 +20,19 @@ const serviceSchema=new mongoose.Schema(
         image:{
             type:String,
             trim:true
+        },
+        type:{
+            type:String,
+            enum:['test','treatment'],
+            required:true,
+            default:"treatment"
+        },
+        price:{
+            type:Number,
+            default:0
+        },
+        duration:{
+            type:Number
         }
 
     },

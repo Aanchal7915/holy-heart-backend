@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const doctorController = require('../controllers/doctor');
+const appointmentController = require('../controllers/appointment');
 const { auth } = require('../middleware/auth');
 const upload = require('../utils/fileUpload');
 
@@ -33,5 +34,27 @@ router.post('/service/:doctorId', auth(['admin']), doctorController.assignServic
 
 // remove a service from a doctor
 router.delete('/service/:doctorId', auth(['admin']), doctorController.deleteServiceFromDoctor);
+
+// Upload multiple images for an appointment
+router.post(
+    '/appointments/:appointmentId/upload-pdf',
+    auth(['admin', 'doctor', 'user']),
+    upload.array('pdfs', 10), // 'images' is the field name, max 10 files
+    doctorController.uploadAppointmentImages
+);
+
+// Get doctor's appointments
+router.get('/appointments', auth(['doctor']), doctorController.getDoctorAppointments);
+
+// Get doctor's test bookings
+router.get('/test-bookings', auth(['doctor']), doctorController.getDoctorTestBookings);
+
+// Unified endpoint with filter
+router.get('/records', auth(['doctor']), doctorController.getDoctorRecords);
+
+// Delete appointment image
+router.delete('/appointments/:appointmentId/delete-pdf', auth(['doctor', 'admin', 'user']),
+    doctorController.deleteAppointmentImage
+);
 
 module.exports = router;

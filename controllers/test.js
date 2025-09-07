@@ -5,6 +5,8 @@ const Appointment = require('../models/Appointment');
 const ServiceCounter = require('../models/ServiceCounter');
 const { DateTime } = require('luxon');
 
+//TODO: check for doctor slot is active or not, doctor is verified or not before adding slots, service is active or not
+
 // CONFIG
 const SEARCH_DAYS = 14;
 const DEFAULT_DURATION_MIN = 30;

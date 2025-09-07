@@ -13,7 +13,8 @@ const registerSchema = z.object({
         .regex(indianPhoneRegex, 'Phone number must be a valid 10-digit Indian mobile number'),
     password: z.string()
         .min(6, 'Password must be at least 6 characters'),
-    role: z.enum(['user', 'doctor']).optional()
+    role: z.enum(['user', 'doctor']).optional(),
+    gender: z.enum(['male', 'female', 'prefer not to say']).optional(),
 });
 
 const loginSchema = z.object({

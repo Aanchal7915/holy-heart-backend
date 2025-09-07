@@ -3,6 +3,7 @@ const DoctorSlot = require('../models/DoctorSlot'); // Make sure you have a Slot
 const removeFile = require('../utils/removeFile');
 const Service = require('../models/Service');
 const bcrypt = require('bcrypt');
+const Appointment = require('../models/Appointment');// If you have a separate model for tests
 
 exports.addDoctor = async (req, res) => {
     try {
@@ -65,9 +66,21 @@ exports.updateDoctor = async (req, res) => {
         if (gender) updates.gender = gender;
         if (phoneNu) updates.phoneNu = phoneNu;
         if (address) updates.address = address;
+
         if (req.file) {
+            // Find the doctor to get the old image
+            const doctor = await User.findOne({ _id: id, role: 'doctor' });
+            if (doctor && doctor.image) {
+                // Extract filename from URL
+                const filename = doctor.image.split('/').pop();
+                removeFile(filename);
+            }
             updates.image = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
         }
+
+        //TODO: if doctor is marked inactive, active, deleted accordingly update corresponding doctorslot and appointments if needed
+
+        
 
         const doctor = await User.findOneAndUpdate(
             { _id: id, role: 'doctor' },
@@ -324,5 +337,141 @@ exports.deleteServiceFromDoctor = async (req, res) => {
         res.status(200).json({ message: 'Service removed from doctor successfully', doctorSlot });
     } catch (error) {
         res.status(500).json({ error: 'Failed to remove service', details: error.message });
+    }
+};
+
+// Upload multiple images for an appointment
+exports.uploadAppointmentImages = async (req, res) => {
+    try {
+        console.log("reached...")
+        const { appointmentId } = req.params;
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No images uploaded' });
+        }
+
+        // Get image URLs
+        const imageUrls = req.files.map(file =>
+            `${req.protocol}://${req.get("host")}/uploads/${file.filename}`
+        );
+
+        // Update appointment with new images (append if already exist)
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        if (!appointment.images) appointment.images = [];
+        appointment.images.push(...imageUrls);
+        await appointment.save();
+
+        res.status(200).json({ message: 'Images uploaded successfully', images: appointment.images });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to upload images', details: error.message });
+    }
+};
+
+// Delete an image from an appointment
+exports.deleteAppointmentImage = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { pdfUrl } = req.body;
+        if (!pdfUrl) {
+            return res.status(400).json({ error: 'pdfUrl is required' });
+        }
+
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        // Remove image from array
+        const pdfIndex = appointment.images.findIndex(url => url === pdfUrl);
+        if (pdfIndex === -1) {
+            return res.status(404).json({ error: 'Pdf not found in appointment' });
+        }
+
+        appointment.images.splice(pdfIndex, 1);
+        await appointment.save();
+
+        // Remove file from uploads folder
+        const filename = pdfUrl.split('/').pop();
+        removeFile(filename);
+
+        res.status(200).json({ message: 'Pdf deleted successfully', images: appointment.images });
+    } catch (error) {
+        console.error('DoctorController - deleteAppointmentImage:', error);
+        res.status(500).json({ error: 'Failed to delete pdf', details: error.message });
+    }
+};
+
+// Get all appointments for a doctor (type: treatment)
+exports.getDoctorAppointments = async (req, res) => {
+    try {
+        console.log("doctor: ", req.user);
+        const doctorId = req.user.userId; // assuming doctor is authenticated
+        // Find appointments where the service type is 'treatment'
+        const appointments = await Appointment.find({ doctor: doctorId })
+            .populate({
+                path: 'service',
+                match: { type: 'treatment' },
+                select: 'name type'
+            })
+            .populate('patient', 'name email gender phoneNu')
+            .sort({ start: -1 });
+
+        // Filter out appointments where service is null (not treatment)
+        const filtered = appointments.filter(a => a.service);
+
+        res.status(200).json({ appointments: filtered });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch appointments', details: error.message });
+    }
+};
+
+// Get all test bookings for a doctor (type: test)
+exports.getDoctorTestBookings = async (req, res) => {
+    try {
+        const doctorId = req.user.userId;
+        // Find appointments where the service type is 'test'
+        const tests = await Appointment.find({ doctor: doctorId })
+            .populate({
+                path: 'service',
+                match: { type: 'test' },
+                select: 'name type'
+            })
+            .populate('patient', 'name email')
+            .sort({ start: -1 });
+
+        // Filter out appointments where service is null (not test)
+        const filtered = tests.filter(a => a.service);
+
+        res.status(200).json({ testBookings: filtered });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch test bookings', details: error.message });
+    }
+};
+
+// Unified endpoint with filter: ?type=test or ?type=treatment
+exports.getDoctorRecords = async (req, res) => {
+    try {
+        const doctorId = req.user.userId;
+        const { type } = req.query; // type: 'test' or 'treatment'
+        let records = await Appointment.find({ doctor: doctorId })
+            .populate({
+                path: 'service',
+                match: type ? { type } : {},
+                select: 'name type'
+            })
+            .populate('patient', 'name email')
+            .sort({ start: -1 });
+
+        // If type is specified, filter out appointments where service is null
+        if (type) {
+            records = records.filter(a => a.service);
+        }
+
+        res.status(200).json({ records });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch records', details: error.message });
     }
 };

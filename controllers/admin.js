@@ -9,8 +9,21 @@ exports.getUserSummary = async (req, res) => {
     const admins = await User.countDocuments({ role: 'admin' });
 
     const last30Days = await User.aggregate([
-      { $match: { createdAt: { $gte: new Date(Date.now() - 30*24*60*60*1000) } } },
-      { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } },
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
       { $sort: { _id: 1 } }
     ]);
 
@@ -29,10 +42,17 @@ exports.getAppointmentSummary = async (req, res) => {
     const confirmed = await Appointment.countDocuments({ status: 'Confirmed' });
     const cancelled = await Appointment.countDocuments({ status: 'Cancelled' });
 
-    const upcoming = await Appointment.countDocuments({ appointmentDate: { $gte: new Date() } });
-    const past = await Appointment.countDocuments({ appointmentDate: { $lt: new Date() } });
+    const upcoming = await Appointment.countDocuments({ start: { $gte: new Date() } });
+    const past = await Appointment.countDocuments({ start: { $lt: new Date() } });
 
-    res.json({ totalAppointments, pending, confirmed, cancelled, upcoming, past });
+    res.json({
+      totalAppointments,
+      pending,
+      confirmed,
+      cancelled,
+      upcoming,
+      past
+    });
   } catch (error) {
     console.error('AdminController - getAppointmentSummary:', error);
     res.status(500).json({ error: 'Server error' });
@@ -42,10 +62,12 @@ exports.getAppointmentSummary = async (req, res) => {
 exports.getAppointmentTrends = async (req, res) => {
   try {
     const trends = await Appointment.aggregate([
-      { $group: { 
-        _id: { $dateToString: { format: "%Y-%m", date: "$appointmentDate" } }, 
-        count: { $sum: 1 } 
-      }},
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$start" } },
+          count: { $sum: 1 }
+        }
+      },
       { $sort: { _id: 1 } }
     ]);
     res.json(trends);
@@ -58,13 +80,31 @@ exports.getAppointmentTrends = async (req, res) => {
 exports.getPopularServices = async (req, res) => {
   try {
     const services = await Appointment.aggregate([
-      { $group: { _id: "$serviceType", count: { $sum: 1 } } },
+      { $group: { _id: "$service", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $limit: 5 }
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: "services", // collection name in Mongo
+          localField: "_id",
+          foreignField: "_id",
+          as: "service"
+        }
+      },
+      { $unwind: "$service" },
+      {
+        $project: {
+          _id: 0,
+          serviceId: "$service._id",
+          name: "$service.name",
+          description: "$service.description",
+          count: 1
+        }
+      }
     ]);
     res.json(services);
   } catch (err) {
-    console.error('AdminController - getPopularServices:', error);
+    console.error('AdminController - getPopularServices:', err);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -72,17 +112,26 @@ exports.getPopularServices = async (req, res) => {
 exports.getPatientRanking = async (req, res) => {
   try {
     const ranking = await Appointment.aggregate([
-      { $group: { _id: "$patientId", count: { $sum: 1 } } },
+      { $group: { _id: "$patient", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 },
-      { $lookup: {
+      {
+        $lookup: {
           from: "users",
           localField: "_id",
           foreignField: "_id",
           as: "patient"
-      }},
+        }
+      },
       { $unwind: "$patient" },
-      { $project: { name: "$patient.name", email: "$patient.email", count: 1 } }
+      {
+        $project: {
+          _id: 0,
+          name: "$patient.name",
+          email: "$patient.email",
+          count: 1
+        }
+      }
     ]);
     res.json(ranking);
   } catch (error) {

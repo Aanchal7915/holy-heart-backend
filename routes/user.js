@@ -26,7 +26,7 @@ const {getProfile, getAllUsers, getUserAppointments, updateBlockStatus} = requir
  *         description: User not found
  */
 // Get own profile
-router.get('/profile', auth(['user', 'admin']), getProfile);
+router.get('/profile', auth(['user', 'admin', 'doctor']), getProfile);
 
 /**
  * @swagger
@@ -114,7 +114,7 @@ router.get('/all', auth('admin'), getAllUsers);
  *         description: List of appointments
  */
 // Get user-specific appointments
-router.get('/appointments', auth('user'), getUserAppointments);
+router.get('/appointments', auth(['user']), userController.getUserAppointments);
 
 /**
  * @swagger
@@ -151,5 +151,7 @@ router.get('/appointments', auth('user'), getUserAppointments);
 // Block or unblock a user (admin only, add auth middleware as needed)
 router.put('/:userId/block', auth('admin'), updateBlockStatus);
 
+// Get user's test bookings
+router.get('/tests', auth(['user']), userController.getUserTests);
 
 module.exports = router;

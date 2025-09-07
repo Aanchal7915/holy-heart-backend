@@ -2,20 +2,36 @@ const Service = require('../models/Service');
 const Appointment = require('../models/Appointment');
 const removeFile = require('../utils/removeFile');
 
+//if any service is marked active, inactive accordingly update and also individual slot also
 
 // Add a new service
 exports.addService = async (req, res) => {
     try {
-        const { name, description } = req.body;
+        const { name, description, type, duration } = req.body;
         console.log("body", req.body);
-        if (!name || !description) {
-            return res.status(400).json({ error: 'Name and description are required' });
+        if (!name || !description || !duration) {
+            return res.status(400).json({ error: 'Name, duration and description are required' });
         }
         if (!req.file) {
             return res.status(400).json({ error: 'Image file is required' });
         }
 
-        const service = new Service({ name, description, status: 'active', image: `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`});
+        if(type && !['test','treatment'].includes(type.toLowerCase())) {
+            return res.status(400).json({ error: 'Type must be either "test" or "treatment"' });
+        }
+
+        if(type && type.toLowerCase() ==='test' && (!req.body.price || isNaN(req.body.price) || req.body.price < 0) ) {
+            return res.status(400).json({ error: 'Price is required for test type and must be a non-negative number' });
+        }
+
+        const service = new Service({ 
+            name, 
+            description, 
+            status: 'active', 
+            image: `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`,
+            type:type?.toLowerCase() || 'treatment',
+            price: type?.toLowerCase() === 'test' ? parseFloat(req.body.price) : 0
+        });
         await service.save();
         res.status(201).json({ message: 'Service added successfully', service });
     } catch (error) {
@@ -29,15 +45,50 @@ exports.updateService = async (req, res) => {
     try {
         console.log("req body:", req.body);
         const { id } = req.params;
-        let {name, description, status} = req.body;
-        updates = {};
+        let { name, description, status, duration, type, price } = req.body;
+        let updates = {};
         if (name) updates.name = name;
         if (description) updates.description = description;
-        if(status) status=status.toLowerCase();
-        if(status && ['active', 'inactive'].includes(status)) updates.status=status;
-
+        if (status) status = status.toLowerCase();
+        if (status && ['active', 'inactive'].includes(status)) updates.status = status;
+        if (type) {
+            type = type.toLowerCase();
+            if (!['test', 'treatment'].includes(type)) {
+                return res.status(400).json({ error: 'Type must be either "test" or "treatment"' });
+            }
+            updates.type = type;
+            if (type === 'test') {
+                if (price === undefined || isNaN(price) || price < 0) {
+                    return res.status(400).json({ error: 'Price is required for test type and must be a non-negative number' });
+                }
+                updates.price = parseFloat(price);
+            } else {
+                updates.price = 0; // Reset price for treatment type
+            }
+        }
         
-        if(req.file) updates.image=`${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+        if (duration) {
+            if (isNaN(duration) || duration <= 0) {
+                return res.status(400).json({ error: 'Duration must be a positive number' });
+            }
+            updates.duration = duration;
+        }
+
+
+        // If updating image, remove previous image file
+        if (req.file) {
+            const service = await Service.findById(id);
+            if (service && service.image) {
+                // Extract filename from URL
+                const filename = service.image.split('/').pop();
+                removeFile(filename);
+            }
+            updates.image = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+        }
+        //if service status is being set to deleted, also update related appointments to 'cancelled' or another status as needed and also update status of slot accordingly
+        if (status === 'deleted') {
+            await Appointment.updateMany({ serviceId: id }, { status: 'cancelled' });
+        }
 
         const service = await Service.findByIdAndUpdate(id, updates, { new: true });
         if (!service) {

@@ -49,9 +49,9 @@ exports.getUserAppointments = async (req, res) => {
         const {
             serviceType,
             status,
-            appointmentDate, // single date (optional)
-            startDate, // for range filtering (optional)
-            endDate,   // for range filtering (optional)
+            appointmentDate,
+            startDate,
+            endDate,
             sort = 'desc',
             page = 1,
             limit = 10
@@ -74,7 +74,6 @@ exports.getUserAppointments = async (req, res) => {
                 filter.start.$lte = end;
             }
         } else if (appointmentDate) {
-            // Single date filtering (same as before)
             let dateObj;
             if (/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)) {
                 dateObj = new Date(appointmentDate);
@@ -91,14 +90,25 @@ exports.getUserAppointments = async (req, res) => {
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
         const sortOrder = sort === 'asc' ? 1 : -1;
-        console.log(filter)
+
+        // Only fetch appointments where service.type === 'test'
         const appointments = await Appointment.find(filter)
             .sort({ start: sortOrder })
             .skip(skip)
-            .limit(parseInt(limit)).populate('doctor', 'name email phoneNu').populate('service', 'name description');
-        const total = await Appointment.countDocuments(filter);
+            .limit(parseInt(limit))
+            .populate({
+                path: 'service',
+                match: { type: 'treatment' },
+                select: 'name description type'
+            })
+            .populate('doctor', 'name email phoneNu');
+
+        // Filter out appointments where service is null (not a test)
+        const tests = appointments.filter(a => a.service);
+
+        const total = tests.length;
         res.status(200).json({
-            appointments,
+            appointments: tests,
             total,
             page: parseInt(page),
             limit: parseInt(limit),
@@ -140,5 +150,68 @@ exports.updateBlockStatus = async (req, res) => {
     } catch (error) {
         console.error('UserController - updateBlockStatus:', error);
         res.status(500).json({ error: 'Server error', message: 'Failed to update block status' });
+    }
+};
+
+// Fetch user's test bookings (appointments where service.type === 'test')
+exports.getUserTests = async (req, res) => {
+    try {
+        const {
+            status,
+            startDate,
+            endDate,
+            sort = 'desc',
+            page = 1,
+            limit = 10
+        } = req.query;
+
+        const filter = { patient: req.user.userId };
+
+        if (status) filter.status = status;
+
+        // Date range filtering
+        if (startDate || endDate) {
+            filter.start = {};
+            if (startDate) {
+                const start = new Date(startDate);
+                start.setHours(0,0,0,0);
+                filter.start.$gte = start;
+            }
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23,59,59,999);
+                filter.start.$lte = end;
+            }
+        }
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const sortOrder = sort === 'asc' ? 1 : -1;
+
+        // Find appointments and populate service, filter for type 'test'
+        const appointments = await Appointment.find(filter)
+            .sort({ start: sortOrder })
+            .skip(skip)
+            .limit(parseInt(limit))
+            .populate({
+                path: 'service',
+                match: { type: 'test' },
+                select: 'name description type'
+            })
+            .populate('doctor', 'name email phoneNu');
+
+        // Filter out appointments where service is null (not a test)
+        const tests = appointments.filter(a => a.service);
+
+        const total = tests.length;
+        res.status(200).json({
+            tests,
+            total,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(total / parseInt(limit))
+        });
+    } catch (error) {
+        console.error('UserController - getUserTests:', error);
+        res.status(500).json({ error: 'Failed to fetch user tests', details: error.message });
     }
 };
