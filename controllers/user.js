@@ -57,37 +57,37 @@ exports.getUserAppointments = async (req, res) => {
             limit = 10
         } = req.query;
         const filter = { patient: req.user.userId };
-        // if (serviceType) filter.serviceType = serviceType;
-        // if (status) filter.status = status;
+        if (serviceType) filter.service = serviceType;
+        if (status) filter.status = status;
 
-        // // Date range filtering
-        // if (startDate || endDate) {
-        //     filter.appointmentDate = {};
-        //     if (startDate) {
-        //         const start = new Date(startDate);
-        //         start.setHours(0,0,0,0);
-        //         filter.appointmentDate.$gte = start;
-        //     }
-        //     if (endDate) {
-        //         const end = new Date(endDate);
-        //         end.setHours(23,59,59,999);
-        //         filter.appointmentDate.$lte = end;
-        //     }
-        // } else if (appointmentDate) {
-        //     // Single date filtering (same as before)
-        //     let dateObj;
-        //     if (/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)) {
-        //         dateObj = new Date(appointmentDate);
-        //     } else if (/^\d{2}-\d{2}-\d{4}$/.test(appointmentDate)) {
-        //         const [day, month, year] = appointmentDate.split('-');
-        //         dateObj = new Date(`${year}-${month}-${day}`);
-        //     }
-        //     if (dateObj) {
-        //         const start = new Date(dateObj.setHours(0,0,0,0));
-        //         const end = new Date(dateObj.setHours(23,59,59,999));
-        //         filter.appointmentDate = { $gte: start, $lte: end };
-        //     }
-        // }
+        // Date range filtering
+        if (startDate || endDate) {
+            filter.start = {};
+            if (startDate) {
+                const start = new Date(startDate);
+                start.setHours(0,0,0,0);
+                filter.start.$gte = start;
+            }
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23,59,59,999);
+                filter.start.$lte = end;
+            }
+        } else if (appointmentDate) {
+            // Single date filtering (same as before)
+            let dateObj;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)) {
+                dateObj = new Date(appointmentDate);
+            } else if (/^\d{2}-\d{2}-\d{4}$/.test(appointmentDate)) {
+                const [day, month, year] = appointmentDate.split('-');
+                dateObj = new Date(`${year}-${month}-${day}`);
+            }
+            if (dateObj) {
+                const start = new Date(dateObj.setHours(0,0,0,0));
+                const end = new Date(dateObj.setHours(23,59,59,999));
+                filter.start = { $gte: start, $lte: end };
+            }
+        }
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
         const sortOrder = sort === 'asc' ? 1 : -1;

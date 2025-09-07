@@ -37,24 +37,24 @@ exports.bookAppointment = async (req, res) => {
 exports.getAppointments = async (req, res) => {
     try {
         // Filtering
-        const { startDate, endDate, status, serviceType, sort = 'desc', page = 1, limit = 1 } = req.query;
+        const { startDate, endDate, status, service, sort = 'desc', page = 1, limit = 1 } = req.query;
         const filter = {};
         // Date range filtering
         if (startDate || endDate) {
-            filter.appointmentDate = {};
+            filter.start = {};
             if (startDate) {
                 const start = new Date(startDate);
                 start.setHours(0,0,0,0);
-                filter.appointmentDate.$gte = start;
+                filter.start.$gte = start;
             }
             if (endDate) {
                 const end = new Date(endDate);
                 end.setHours(23,59,59,999);
-                filter.appointmentDate.$lte = end;
+                filter.start.$lte = end;
             }
         }
         if (status) filter.status = status;
-        if (serviceType) filter.serviceType = serviceType;
+        if (service) filter.service = service;
 
         // Pagination
         const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -62,7 +62,7 @@ exports.getAppointments = async (req, res) => {
         // Sorting
         const sortOrder = sort === 'asc' ? 1 : -1;
         const appointmentsRaw = await Appointment.find(filter)
-            .sort({ appointmentDate: sortOrder })
+            .sort({ start: sortOrder })
             .skip(skip)
             .limit(parseInt(limit))
             .populate('patient', 'name email phoneNu').populate('doctor', 'name email phoneNu').populate('service', 'name description');

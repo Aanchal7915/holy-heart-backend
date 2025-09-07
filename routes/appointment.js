@@ -105,7 +105,15 @@ route.put('/:id/status', auth(['admin']), updateAppointmentStatus);
 route.post('/auto-book', auth(['user']), async (req, res) => {
   try {
     const patientId=req.user.userId;
-    const { serviceId, preferredDoctorId, preferredDateISO, preferredTimeHHMM } = req.body;
+    const { serviceId, preferredDoctorId, appointmentDate, preferredTimeHHMM } = req.body;
+    let preferredDateISO=null;
+    if(appointmentDate) {
+      const [day, month, year]=appointmentDate.split('-')
+      const preferredDateISO=`${year}-${month}-${day}`
+
+      console.log(preferredDateISO)
+    }
+
     const result = await automaticSchedule({ serviceId, patientId, preferredDoctorId, preferredDateISO, preferredTimeHHMM });
     if (!result.success) return res.status(409).json(result);
     res.json(result);
@@ -114,6 +122,17 @@ route.post('/auto-book', auth(['user']), async (req, res) => {
     res.status(500).json({ success:false, message: err.message });
   }
 });
+
+// await automaticSchedule({ serviceId, patientId });
+// await automaticSchedule({ serviceId, patientId, permanent: true });
+//await automaticSchedule({
+//   serviceId,
+//   patientId,
+//   mode: 'slice',
+//   durationMin: 20,
+//   permanent: true
+// });
+
 
 
 module.exports = route;
