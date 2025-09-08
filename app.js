@@ -10,6 +10,7 @@ const adminRoute=require('./routes/admin');
 const serviceRoute=require('./routes/service');
 const doctorRoute=require('./routes/doctor');
 const paymentRoute=require("./routes/payment.js")
+const opdsRoute=require("./routes/opds.js")
 const path = require("path");
 const dotenv=require('dotenv');
 dotenv.config();
@@ -35,6 +36,7 @@ app.use("/admin", adminRoute);
 app.use("/services", serviceRoute);
 app.use("/doctors", doctorRoute);
 app.use("/payments", paymentRoute);
+app.use("/opds", opdsRoute);
 
 // Swagger definition
 const swaggerDefinition = {
