@@ -134,7 +134,14 @@ exports.getService = async (req, res) => {
 exports.getAllServices = async (req, res) => {
     try {
         // Find all active services
-        const services = await Service.find({ status:'active' });
+        const type= req.query.type;
+        if(type && !['test','treatment'].includes(type.toLowerCase())) {
+            return res.status(400).json({ error: 'Type must be either "test" or "treatment"' });
+        }
+        let filter={ status:'active' };
+        if(type) filter.type=type.toLowerCase();    
+
+        const services = await Service.find(filter);
 
         // For each service, count related appointments
         // const servicesWithAppointmentCount = await Promise.all(
