@@ -115,10 +115,11 @@ route.post('/auto-book', auth(['user']), async (req, res) => {
       console.log(preferredDateISO)
     }
 
-    // await Service.findById(serviceId); // to ensure service exists
+    const service=await Service.findById(serviceId); // to ensure service exists
+    const duration=service.duration; // in minutes
 
 
-    const result = await automaticSchedule({ serviceId, patientId, preferredDoctorId, preferredDateISO, preferredTimeHHMM });
+    const result = await automaticSchedule({ serviceId, patientId, preferredDoctorId, preferredDateISO, preferredTimeHHMM, mode:"slice",durationMin:duration });
     if (!result.success) return res.status(409).json(result);
     res.json(result);
   } catch (err) {

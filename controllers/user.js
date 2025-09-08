@@ -1,5 +1,111 @@
 const User = require('../models/User');
 const Appointment = require('../models/Appointment');
+const DoctorSlot = require('../models/DoctorSlot');
+const Service = require('../models/Service');
+
+// Utility to get day name from a date
+function getDayName(date) {
+    return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()];
+}
+
+// Utility to format slot status
+function formatSlotStatus(slot, bookedAppointments) {
+    // Find if slot is booked for this time and service
+    const booked = bookedAppointments.find(app =>
+        app.service.toString() === slot.service.toString() &&
+        app.start.getHours() === parseInt(slot.start.split(':')[0]) &&
+        app.start.getMinutes() === parseInt(slot.start.split(':')[1])
+    );
+    return {
+        ...slot,
+        status: booked ? 'booked' : 'empty',
+        appointment: booked ? {
+            patient: booked.patient,
+            start: booked.start,
+            end: booked.end,
+            status: booked.status
+        } : null
+    };
+}
+
+// Controller to get next 40 days schedule for a doctor
+exports.getDoctorSchedule = async (req, res) => {
+    try {
+        const doctorId = req.params.doctorId;
+
+        // Get doctor's slot structure
+        const doctorSlot = await DoctorSlot.findOne({ doctor: doctorId })
+            .populate('services.service', 'name type')
+            .populate('weeklyAvailability.slots.service', 'name type');
+
+        if (!doctorSlot) {
+            return res.status(404).json({ error: 'DoctorSlot not found' });
+        }
+
+        // Get all appointments for next 40 days
+        const today = new Date();
+        const endDate = new Date();
+        endDate.setDate(today.getDate() + 39);
+        const appointments = await Appointment.find({
+            doctor: doctorId,
+            start: { $gte: today, $lte: endDate }
+        }).populate('patient', 'name email');
+
+        // Build schedule for next 40 days
+        const schedule = [];
+        for (let i = 0; i < 40; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            const dayName = getDayName(date);
+
+            // Find slots for this day
+            const dayAvailability = doctorSlot.weeklyAvailability.find(d => d.day === dayName);
+            const slots = [];
+            if (dayAvailability) {
+                for (const slot of dayAvailability.slots) {
+                    // Build slot start/end datetime for this date
+                    const [startHour, startMin] = slot.start.split(':').map(Number);
+                    const [endHour, endMin] = slot.end.split(':').map(Number);
+                    const slotStart = new Date(date);
+                    slotStart.setHours(startHour, startMin, 0, 0);
+                    const slotEnd = new Date(date);
+                    slotEnd.setHours(endHour, endMin, 0, 0);
+
+                    // Find if slot is booked
+                    const booked = appointments.find(app =>
+                        app.service.toString() === slot.service._id.toString() &&
+                        app.start.getTime() === slotStart.getTime() &&
+                        app.end.getTime() === slotEnd.getTime()
+                    );
+
+                    slots.push({
+                        service: slot.service,
+                        start: slotStart,
+                        end: slotEnd,
+                        chargePerAppointment: slot.chargePerAppointment,
+                        status: booked ? 'booked' : 'empty',
+                        appointment: booked ? {
+                            patient: booked.patient,
+                            status: booked.status,
+                            appointmentId: booked._id
+                        } : null
+                    });
+                }
+            }
+
+            schedule.push({
+                date: date.toISOString().slice(0, 10),
+                day: dayName,
+                slots
+            });
+        }
+
+        res.status(200).json({ doctorId, schedule });
+    } catch (error) {
+        console.error('getDoctorSchedule:', error);
+        res.status(500).json({ error: 'Failed to fetch doctor schedule', details: error.message });
+    }
+};
 
 exports.getProfile = async (req, res) => {
     try {

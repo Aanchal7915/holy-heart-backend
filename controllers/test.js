@@ -9,7 +9,7 @@ const { DateTime } = require('luxon');
 
 // CONFIG
 const SEARCH_DAYS = 14;
-const DEFAULT_DURATION_MIN = 30;
+const DEFAULT_DURATION_MIN = 40;
 const RESERVATION_TTL_SECONDS = 600;
 
 // Helpers
@@ -162,6 +162,8 @@ async function automaticSchedule({
   mode = 'block',
   durationMin = DEFAULT_DURATION_MIN
 }) {
+  console.log({ serviceId, patientId, preferredDoctorId, preferredDateISO, preferredTimeHHMM, searchDays, permanent, mode, durationMin });
+  
   const doctorSlotsDocs = await findDoctorsForService(serviceId);
   if (!doctorSlotsDocs || doctorSlotsDocs.length === 0) {
     return { success: false, reason: 'no-doctor-for-service' };

@@ -272,7 +272,7 @@ exports.assignServiceToDoctor = async (req, res) => {
         const { doctorId } = req.params;
         const { service, chargePerAppointment } = req.body;
 
-        if (!service || !chargePerAppointment) {
+        if (!service) {
             return res.status(400).json({ error: 'service and chargePerAppointment are required' });
         }
 
@@ -296,7 +296,7 @@ exports.assignServiceToDoctor = async (req, res) => {
         }
 
         // Append the service
-        doctorSlot.services.push({ service, chargePerAppointment });
+        doctorSlot.services.push({ service, chargePerAppointment:serviceExists.price });
         await doctorSlot.save();
 
         res.status(200).json({ message: 'Service assigned to doctor successfully', doctorSlot });
@@ -475,3 +475,5 @@ exports.getDoctorRecords = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch records', details: error.message });
     }
 };
+
+
