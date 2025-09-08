@@ -8,8 +8,7 @@ const serviceSchema=new mongoose.Schema(
             trim:true
         },
         description:{
-            type:String,
-            required:true,      
+            type:String,     
             trim:true
         },
         status:{
@@ -23,7 +22,7 @@ const serviceSchema=new mongoose.Schema(
         },
         type:{
             type:String,
-            enum:['test','treatment'],
+            enum:['test','treatment', 'opds'],
             required:true,
             default:"treatment"
         },

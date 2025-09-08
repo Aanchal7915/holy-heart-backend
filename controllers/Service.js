@@ -7,30 +7,48 @@ const removeFile = require('../utils/removeFile');
 // Add a new service
 exports.addService = async (req, res) => {
     try {
-        const { name, description, type, duration } = req.body;
-        console.log("body", req.body);
-        if (!name || !description || !duration) {
-            return res.status(400).json({ error: 'Name, duration and description are required' });
+        const { name, description, type, duration, price } = req.body;
+        if (!name) {
+            return res.status(400).json({ error: 'Name is required' });
+        }
+
+        // Handle OPDS type: only name allowed, only one can exist
+        if (type && type.toLowerCase() === 'opds') {
+            const existingOpds = await Service.findOne({ type: 'opds' });
+            if (existingOpds) {
+                return res.status(400).json({ error: 'Only one OPDS type service can be added.' });
+            }
+            const service = new Service({
+                name,
+                type: 'opds',
+                status: 'active'
+            });
+            await service.save();
+            return res.status(201).json({ message: 'OPDS service added successfully', service });
+        }
+
+        // For other types, validate as before
+        if (!description || !duration) {
+            return res.status(400).json({ error: 'Description and duration are required for non-OPDS services' });
         }
         if (!req.file) {
-            return res.status(400).json({ error: 'Image file is required' });
+            return res.status(400).json({ error: 'Image file is required for non-OPDS services' });
+        }
+        if (type && !['test', 'treatment', 'opds'].includes(type.toLowerCase())) {
+            return res.status(400).json({ error: 'Type must be either "test", "treatment", or "opds"' });
+        }
+        if ((type && ['test', 'treatment'].includes(type.toLowerCase())) && (price === undefined || isNaN(price) || price < 0)) {
+            return res.status(400).json({ error: 'Price is required for test and treatment type and must be a non-negative number' });
         }
 
-        if(type && !['test','treatment'].includes(type.toLowerCase())) {
-            return res.status(400).json({ error: 'Type must be either "test" or "treatment"' });
-        }
-
-        if(type && type.toLowerCase() ==='test' && (!req.body.price || isNaN(req.body.price) || req.body.price < 0) ) {
-            return res.status(400).json({ error: 'Price is required for test type and must be a non-negative number' });
-        }
-
-        const service = new Service({ 
-            name, 
-            description, 
-            status: 'active', 
+        const service = new Service({
+            name,
+            description,
+            status: 'active',
             image: `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`,
-            type:type?.toLowerCase() || 'treatment',
-            price: type?.toLowerCase() === 'test' ? parseFloat(req.body.price) : 0
+            type: type?.toLowerCase() || 'treatment',
+            price: parseFloat(price),
+            duration
         });
         await service.save();
         res.status(201).json({ message: 'Service added successfully', service });
@@ -43,58 +61,75 @@ exports.addService = async (req, res) => {
 // Update a service
 exports.updateService = async (req, res) => {
     try {
-        console.log("req body:", req.body);
         const { id } = req.params;
         let { name, description, status, duration, type, price } = req.body;
         let updates = {};
-        if (name) updates.name = name;
-        if (description) updates.description = description;
-        if (status) status = status.toLowerCase();
-        if (status && ['active', 'inactive'].includes(status)) updates.status = status;
-        if (type) {
-            type = type.toLowerCase();
-            if (!['test', 'treatment'].includes(type)) {
-                return res.status(400).json({ error: 'Type must be either "test" or "treatment"' });
+
+        const service = await Service.findById(id);
+        if (!service) {
+            return res.status(404).json({ error: 'Service not found' });
+        }
+
+        // If updating to OPDS type, only allow name change and only one OPDS service
+        if (type && type.toLowerCase() === 'opds') {
+            const existingOpds = await Service.findOne({ type: 'opds', _id: { $ne: id } });
+            if (existingOpds) {
+                return res.status(400).json({ error: 'Only one OPDS type service can exist.' });
             }
-            updates.type = type;
-            if (type === 'test') {
-                if (price === undefined || isNaN(price) || price < 0) {
-                    return res.status(400).json({ error: 'Price is required for test type and must be a non-negative number' });
+            if (name) updates.name = name;
+            updates.type = 'opds';
+            updates.status = status ? status.toLowerCase() : service.status;
+            // Remove other fields for OPDS
+            updates.description = undefined;
+            updates.image = undefined;
+            updates.price = undefined;
+            updates.duration = undefined;
+        } else {
+            if (name) updates.name = name;
+            if (description) updates.description = description;
+            if (status) {
+                status = status.toLowerCase();
+                if (['active', 'inactive'].includes(status)) updates.status = status;
+            }
+            if (type) {
+                type = type.toLowerCase();
+                if (!['test', 'treatment', 'opds'].includes(type)) {
+                    return res.status(400).json({ error: 'Type must be either "test", "treatment", or "opds"' });
                 }
-                updates.price = parseFloat(price);
-            } else {
-                updates.price = 0; // Reset price for treatment type
+                updates.type = type;
+                if (['test', 'treatment'].includes(type)) {
+                    if (price === undefined || isNaN(price) || price < 0) {
+                        return res.status(400).json({ error: 'Price is required for test and treatment type and must be a non-negative number' });
+                    }
+                    updates.price = parseFloat(price);
+                }
             }
-        }
-        
-        if (duration) {
-            if (isNaN(duration) || duration <= 0) {
-                return res.status(400).json({ error: 'Duration must be a positive number' });
+            if (duration) {
+                if (isNaN(duration) || duration <= 0) {
+                    return res.status(400).json({ error: 'Duration must be a positive number' });
+                }
+                updates.duration = duration;
             }
-            updates.duration = duration;
+            // If updating image, remove previous image file
+            if (req.file) {
+                if (service.image) {
+                    const filename = service.image.split('/').pop();
+                    removeFile(filename);
+                }
+                updates.image = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+            }
         }
 
-
-        // If updating image, remove previous image file
-        if (req.file) {
-            const service = await Service.findById(id);
-            if (service && service.image) {
-                // Extract filename from URL
-                const filename = service.image.split('/').pop();
-                removeFile(filename);
-            }
-            updates.image = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-        }
-        //if service status is being set to deleted, also update related appointments to 'cancelled' or another status as needed and also update status of slot accordingly
+        // If service status is being set to deleted, also update related appointments to 'cancelled'
         if (status === 'deleted') {
             await Appointment.updateMany({ serviceId: id }, { status: 'cancelled' });
         }
 
-        const service = await Service.findByIdAndUpdate(id, updates, { new: true });
-        if (!service) {
+        const updatedService = await Service.findByIdAndUpdate(id, updates, { new: true });
+        if (!updatedService) {
             return res.status(404).json({ error: 'Service not found' });
         }
-        res.status(200).json({ message: 'Service updated successfully', service });
+        res.status(200).json({ message: 'Service updated successfully', service: updatedService });
     } catch (error) {
         console.error('ServiceController - updateService:', error);
         res.status(500).json({ error: 'Failed to update service', details: error.message });
