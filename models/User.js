@@ -12,6 +12,9 @@ const userSchema = new Schema({
         enum:['male', 'female', 'prefer not to say'],
         default: 'prefer not to say'
     },
+    specialization:{
+        type:String
+    },
     email: {
         type: String,
         required: true,

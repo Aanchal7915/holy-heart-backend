@@ -17,7 +17,11 @@ exports.auth = (roles = []) => {
         try {
             const decoded = jwt.verify(token, JWT_SECRET);
             req.user = decoded;
+            console.log(decoded);
+            console.log(roles);
+            console.log(roles.includes(decoded.role))
             if (roles.length && !roles.includes(decoded.role)) {
+                console.log('Forbidden: insufficient role');
                 return res.status(403).json({ error: 'Forbidden: insufficient role' });
             }
             next();
