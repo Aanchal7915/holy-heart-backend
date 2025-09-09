@@ -343,7 +343,7 @@ exports.deleteServiceFromDoctor = async (req, res) => {
 // Upload multiple images for an appointment
 exports.uploadAppointmentImages = async (req, res) => {
     try {
-        console.log("reached...")
+        // console.log("reached...")
         const { appointmentId } = req.params;
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No images uploaded' });
@@ -407,7 +407,7 @@ exports.deleteAppointmentImage = async (req, res) => {
 // Get all appointments for a doctor (type: treatment)
 exports.getDoctorAppointments = async (req, res) => {
     try {
-        console.log("doctor: ", req.user);
+        // console.log("doctor: ", req.user);
         const doctorId = req.user.userId; // assuming doctor is authenticated
         // Find appointments where the service type is 'treatment'
         const appointments = await Appointment.find({ doctor: doctorId })

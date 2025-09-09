@@ -321,3 +321,77 @@ exports.getUserTests = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch user tests', details: error.message });
     }
 };
+
+// Fetch user's OPDS bookings from Appointment model
+exports.getUserOpdsBookings = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const today = new Date();
+        const endDate = new Date();
+        endDate.setDate(today.getDate() + 13);
+
+        // Find appointments for this user where service type is 'opds', date in next 14 days, and status is not cancelled
+        const appointments = await Appointment.find({
+            patient: userId,
+            start: { $gte: today, $lte: endDate },
+            status: { $ne: 'cancelled' }
+        })
+        .populate({
+            path: 'service',
+            match: { type: 'opds' },
+            select: 'name type'
+        })
+        .populate('doctor', 'name email phoneNu')
+        .sort({ start: 1 });
+
+        // Filter out appointments where service is null (not OPDS)
+        const opdsBookings = appointments.filter(a => a.service);
+
+        res.status(200).json({ opdsBookings });
+    } catch (error) {
+        console.error('UserController - getUserOpdsBookings:', error);
+        res.status(500).json({ error: 'Failed to fetch user OPDS bookings', details: error.message });
+    }
+};
+
+
+
+exports.cancelOpdsAppointment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const userId = req.user.userId;
+
+        // Find the appointment and ensure it belongs to the user and is OPDS type
+        const appointment = await Appointment.findById(appointmentId)
+            .populate({
+                path: 'service',
+                match: { type: 'opds' },
+                select: 'type'
+            });
+
+        if (!appointment || !appointment.service) {
+            return res.status(404).json({ error: 'OPDS appointment not found.' });
+        }
+
+        if (appointment.patient.toString() !== userId) {
+            return res.status(403).json({ error: 'You are not authorized to cancel this appointment.' });
+        }
+
+        if (appointment.status === 'cancelled') {
+            return res.status(400).json({ error: 'Appointment is already cancelled.' });
+        }
+
+        appointment.status = 'cancelled';
+        await appointment.save();
+
+        res.status(200).json({ message: 'OPDS appointment cancelled successfully', appointment });
+    } catch (error) {
+        console.error('cancelOpdsAppointment:', error);
+        res.status(500).json({ error: 'Failed to cancel OPDS appointment', details: error.message });
+    }
+};
+
+
+
+
+

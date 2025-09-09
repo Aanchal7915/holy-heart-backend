@@ -154,4 +154,9 @@ router.put('/:userId/block', auth('admin'), updateBlockStatus);
 // Get user's test bookings
 router.get('/tests', auth(['user']), userController.getUserTests);
 
+router.get('/opds-bookings', auth(['user']), userController.getUserOpdsBookings);
+
+// Cancel OPDS appointment
+router.put('/cancel-opds/:appointmentId', auth(['user']), userController.cancelOpdsAppointment);
+
 module.exports = router;
