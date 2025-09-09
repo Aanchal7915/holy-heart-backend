@@ -12,7 +12,7 @@ const userSchema = new Schema({
         enum:['male', 'female', 'prefer not to say'],
         default: 'prefer not to say'
     },
-    specialization:{
+    specialisation:{
         type:String
     },
     email: {

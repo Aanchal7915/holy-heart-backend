@@ -62,7 +62,7 @@ exports.getDoctorOpdsSchedule = async (req, res) => {
 
             // Find slots for this day for OPDS service only
             // console.log("dayName", dayName)
-            // console.log(date.toLocaleString("en-GB"));
+            console.log(date.toLocaleString("en-GB"));
             const dayAvailability = doctorSlot.weeklyAvailability.find(d => d.day === dayName);
             // console.log("dayAvailability", dayAvailability)
             const slots = [];
@@ -71,7 +71,7 @@ exports.getDoctorOpdsSchedule = async (req, res) => {
                     if (!slot.service || slot.service.type !== 'opds') continue;
 
                     // Build slot start/end datetime for this date
-                    // console.log(".........")
+                    console.log(".........")
 
                     const [startHour, startMin] = slot.start.split(':').map(Number);
                     const [endHour, endMin] = slot.end.split(':').map(Number);
@@ -80,17 +80,17 @@ exports.getDoctorOpdsSchedule = async (req, res) => {
                     const slotEnd = new Date(date);
                     slotEnd.setHours(endHour, endMin, 0, 0);
 
-                    // console.log(slotStart.toLocaleString("en-GB"), slotEnd.toLocaleString("en-GB"))
+                    console.log(slotStart.toLocaleString("en-GB"), slotEnd.toLocaleString("en-GB"))
 
 
                     // Find if slot is booked
-                    // console.log("Find if slot is booked")
+                    console.log("Find if slot is booked")
                     const booked = appointments.find(app => {
-                        // console.log(app.start.toLocaleString("en-GB"), app.end.toLocaleString("en-GB"))
+                        console.log(app.start.toLocaleString("en-GB"), app.end.toLocaleString("en-GB"))
                         return app.start.getTime() === slotStart.getTime() && app.end.getTime() === slotEnd.getTime()
                     }
                     );
-                    // console.log("booked", booked)
+                    console.log("booked", booked)
 
                     slots.push({
                         start: slot.start,
