@@ -93,8 +93,8 @@ exports.getDoctorOpdsSchedule = async (req, res) => {
                     // console.log("booked", booked)
 
                     slots.push({
-                        start: slotStart,
-                        end: slotEnd,
+                        start: slot.start,
+                        end: slot.end,
                         status: booked ? 'booked' : 'free',
                         appointment: booked ? {
                             patient: booked.patient,

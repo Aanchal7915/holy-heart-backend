@@ -222,15 +222,5 @@ function formatTime(iso) {
 dat= "2025-09-14T22:14:14.375Z"
 slotStart="2025-09-14T03:30:00.000+00:00"
 slotEnd ="2025-09-15T04:00:00.000Z"
-console.log(new Date(slotStart).toLocaleString("en-GB"))
-function withCustomTime(date, hhmm) {
-  const [h, m] = hhmm.split(":").map(Number);
-  const d = new Date(date); // copy the date
-  d.setHours(h, m, 0, 0);   // set custom hours & minutes
-  return d.toLocaleString("en-GB", { hour12: false });
-}
+console.log(new Date("2025-09-15T03:30:00.000Z").toLocaleString("en-GB"))
 
-// Example
-const dt = new Date();
-console.log(withCustomTime(dt, "09:00")); // "09/09/2025, 09:00:00"
-console.log(withCustomTime(dt, "09:30")); // "09/09/2025, 15:45:00"
