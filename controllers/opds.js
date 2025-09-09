@@ -48,6 +48,7 @@ exports.getDoctorOpdsSchedule = async (req, res) => {
         const appointments = await Appointment.find({
             doctor: doctorId,
             service: opdsService.service._id,
+            status: { $nin: ['cancelled', 'expired'] },
             start: { $gte: today, $lte: endDate }
         });
         // console.log("appointments", appointments)
