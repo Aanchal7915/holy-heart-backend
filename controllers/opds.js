@@ -51,7 +51,7 @@ exports.getDoctorOpdsSchedule = async (req, res) => {
             status: { $nin: ['cancelled', 'expired'] },
             start: { $gte: today, $lte: endDate }
         });
-        // console.log("appointments", appointments)
+        console.log("appointments", appointments)
 
         // Build schedule for next 14 days
         const schedule = [];
@@ -59,12 +59,12 @@ exports.getDoctorOpdsSchedule = async (req, res) => {
             const date = new Date(today);
             date.setDate(today.getDate() + i);
             const dayName = getDayName(date);
-
+            console.log("start...................................")
             // Find slots for this day for OPDS service only
-            // console.log("dayName", dayName)
+            console.log("dayName", dayName)
             console.log(date.toLocaleString("en-GB"));
             const dayAvailability = doctorSlot.weeklyAvailability.find(d => d.day === dayName);
-            // console.log("dayAvailability", dayAvailability)
+            console.log("dayAvailability", dayAvailability)
             const slots = [];
             if (dayAvailability) {
                 for (const slot of dayAvailability.slots) {
