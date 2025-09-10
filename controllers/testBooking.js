@@ -125,15 +125,14 @@ console.log(err);
 exports.uploadReport = async (req, res) => {
     try {
         // console.log("reached...")
-        const { testIId } = req.params;
-        if (!req.files || req.files.length === 0) {
+        console.log("req came")
+        const { testId } = req.params;
+        if (!req.file) {
             return res.status(400).json({ error: 'No images uploaded' });
         }
 
         // Get image URLs
-        const imageUrls = req.files.map(file =>
-            `${req.protocol}://${req.get("host")}/uploads/${file.filename}`
-        );
+        const imageUrls =  `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
 
         // Update appointment with new images (append if already exist)
         const tb = await TestBooking.findById(testId);
@@ -141,12 +140,13 @@ exports.uploadReport = async (req, res) => {
             return res.status(404).json({ error: 'Appointment not found' });
         }
 
-        if (!tb.reports) appointment.reports = [];
-        tb.reports.push(...imageUrls);
+        if (!tb.reports) tb.reports = [];
+        tb.reports.push(imageUrls);
         await tb.save();
 
-        res.status(200).json({ message: 'Report uploaded successfully', images: appointment.images });
+        res.status(200).json({ message: 'Report uploaded successfully', reports: tb.reports });
     } catch (error) {
+        console.error('TestBookingController - uploadReport:', error);
         res.status(500).json({ error: 'Failed to upload report', details: error.message });
     }
 };
@@ -178,7 +178,7 @@ exports.deleteReport = async (req, res) => {
         const filename = pdfUrl.split('/').pop();
         removeFile(filename);
 
-        res.status(200).json({ message: 'Pdf deleted successfully', images: appointment.images });
+        res.status(200).json({ message: 'Pdf deleted successfully', reports: tb.reports });
     } catch (error) {
         console.error('DoctorController - deleteAppointmentImage:', error);
         res.status(500).json({ error: 'Failed to delete pdf', details: error.message });

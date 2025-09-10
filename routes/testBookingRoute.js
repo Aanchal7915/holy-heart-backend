@@ -17,8 +17,8 @@ router.delete('/:testId/delete-pdf', auth(['doctor', 'admin', 'user']),
 
 router.post(
     '/:testId/upload-pdf',
-    auth(['admin', 'doctor', 'user']),
-    upload.array('pdfs', 10), // 'images' is the field name, max 10 files
+    auth(['admin', 'doctor']),
+    upload.single('pdf'), // 'images' is the field name, max 10 files
     uploadReport
 );
 

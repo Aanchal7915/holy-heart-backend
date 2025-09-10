@@ -7,9 +7,9 @@ const Appointment = require('../models/Appointment');// If you have a separate m
 
 exports.addDoctor = async (req, res) => {
     try {
-        const { name, email, password, phoneNu, gender } = req.body;
-        if (!name || !email || !password || !gender) {
-            return res.status(400).json({ error: 'Name, gender, email, and password are required' });
+        const { name, email, password, phoneNu, gender, specialisation, address } = req.body;
+        if (!name || !email || !password || !gender || !specialisation) {
+            return res.status(400).json({ error: 'Name, gender, specialisation, email, and password are required' });
         }
         if(!req.file){
             return res.status(400).json({ error: 'Image file is required' });
@@ -26,6 +26,8 @@ exports.addDoctor = async (req, res) => {
         const doctor = new User({
             name,
             email,
+            address:address,
+            specialisation:specialisation,
             password: hashedPassword,
             phoneNu,
             role: 'doctor',
@@ -59,13 +61,14 @@ exports.getAllDoctors = async (req, res) => {
 exports.updateDoctor = async (req, res) => {
     try {
         const { id } = req.params;
-        let { name, gender, phoneNu, address } = req.body;
+        let { name, gender, phoneNu, address, specialisation } = req.body;
 
         const updates = {};
         if (name) updates.name = name;
         if (gender) updates.gender = gender;
         if (phoneNu) updates.phoneNu = phoneNu;
         if (address) updates.address = address;
+        if(specialisation) updates.specialisation=specialisation;
 
         if (req.file) {
             // Find the doctor to get the old image
