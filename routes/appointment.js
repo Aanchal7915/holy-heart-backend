@@ -107,17 +107,19 @@ route.post('/auto-book', auth(['user']), async (req, res) => {
   try {
     const patientId=req.user.userId;
     const { serviceId, preferredDoctorId, appointmentDate, preferredTimeHHMM } = req.body;
+    // console.log(req.body)
     let preferredDateISO=null;
     if(appointmentDate) {
       const [day, month, year]=appointmentDate.split('-')
-      const preferredDateISO=`${year}-${month}-${day}`
+      preferredDateISO=`${year}-${month}-${day}`
 
-      console.log(preferredDateISO)
+      // console.log(preferredDateISO)
     }
 
     const service=await Service.findById(serviceId); // to ensure service exists
     const duration=service.duration; // in minutes
-
+    // console.log({serviceId, patientId, preferredDoctorId, preferredDateISO, preferredTimeHHMM, duration})
+    // return res.json({success:true, message:"API working"})
 
     const result = await automaticSchedule({ serviceId, patientId, preferredDoctorId, preferredDateISO, preferredTimeHHMM, mode:"slice",durationMin:duration });
     if (!result.success) return res.status(409).json(result);
