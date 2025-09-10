@@ -348,14 +348,13 @@ exports.uploadAppointmentImages = async (req, res) => {
     try {
         // console.log("reached...")
         const { appointmentId } = req.params;
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ error: 'No images uploaded' });
+        if (!req.file) {
+            return res.status(400).json({ error: 'No pdf uploaded' });
         }
 
         // Get image URLs
-        const imageUrls = req.files.map(file =>
-            `${req.protocol}://${req.get("host")}/uploads/${file.filename}`
-        );
+        const imageUrls=
+            `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
 
         // Update appointment with new images (append if already exist)
         const appointment = await Appointment.findById(appointmentId);
@@ -364,12 +363,12 @@ exports.uploadAppointmentImages = async (req, res) => {
         }
 
         if (!appointment.images) appointment.images = [];
-        appointment.images.push(...imageUrls);
+        appointment.images.push(imageUrls);
         await appointment.save();
 
-        res.status(200).json({ message: 'Images uploaded successfully', images: appointment.images });
+        res.status(200).json({ message: 'pdf uploaded successfully', images: appointment.images });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to upload images', details: error.message });
+        res.status(500).json({ error: 'Failed to upload pdf', details: error.message });
     }
 };
 

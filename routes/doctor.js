@@ -39,7 +39,7 @@ router.delete('/service/:doctorId', auth(['admin']), doctorController.deleteServ
 router.post(
     '/appointments/:appointmentId/upload-pdf',
     auth(['admin', 'doctor', 'user']),
-    upload.array('pdfs', 10), // 'images' is the field name, max 10 files
+    upload.single('pdf'), // 'images' is the field name, max 10 files
     doctorController.uploadAppointmentImages
 );
 
