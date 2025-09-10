@@ -5,5 +5,6 @@ const { auth } = require('../middleware/auth');
 
 // Create Razorpay order
 router.post('/create-order', auth(['user']), paymentController.createOrder);
+router.post("/razorpay-webhook", paymentController.verifyPayment);
 
 module.exports = router;

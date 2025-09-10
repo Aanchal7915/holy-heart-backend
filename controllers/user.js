@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Appointment = require('../models/Appointment');
 const DoctorSlot = require('../models/DoctorSlot');
 const Service = require('../models/Service');
+const mongoose = require('mongoose');
 
 // Utility to get day name from a date
 function getDayName(date) {
@@ -150,81 +151,185 @@ exports.getAllUsers = async (req, res) => {
 };
 
 
+// exports.getUserAppointments = async (req, res) => {
+//     try {
+//         const {
+//             serviceType,
+//             status,
+//             appointmentDate,
+//             startDate,
+//             endDate,
+//             sort = 'desc',
+//             page = 1,
+//             limit = 10
+//         } = req.query;
+//         const filter = { patient: req.user.userId };
+//         if (serviceType) filter.service = serviceType;
+//         if (status) filter.status = status;
+
+//         // Date range filtering
+//         if (startDate || endDate) {
+//             filter.start = {};
+//             if (startDate) {
+//                 const start = new Date(startDate);
+//                 start.setHours(0,0,0,0);
+//                 filter.start.$gte = start;
+//             }
+//             if (endDate) {
+//                 const end = new Date(endDate);
+//                 end.setHours(23,59,59,999);
+//                 filter.start.$lte = end;
+//             }
+//         } else if (appointmentDate) {
+//             let dateObj;
+//             if (/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)) {
+//                 dateObj = new Date(appointmentDate);
+//             } else if (/^\d{2}-\d{2}-\d{4}$/.test(appointmentDate)) {
+//                 const [day, month, year] = appointmentDate.split('-');
+//                 dateObj = new Date(`${year}-${month}-${day}`);
+//             }
+//             if (dateObj) {
+//                 const start = new Date(dateObj.setHours(0,0,0,0));
+//                 const end = new Date(dateObj.setHours(23,59,59,999));
+//                 filter.start = { $gte: start, $lte: end };
+//             }
+//         }
+
+//         const skip = (parseInt(page) - 1) * parseInt(limit);
+//         const sortOrder = sort === 'asc' ? 1 : -1;
+
+//         // Only fetch appointments where service.type === 'treatment'
+//         const appointments = await Appointment.find(filter)
+//             .sort({ start: sortOrder })
+//             .skip(skip)
+//             .limit(parseInt(limit))
+//             .populate({
+//                 path: 'service',
+//                 match: { type: 'treatment' },
+//                 select: 'name description type'
+//             })
+//             .populate('doctor', 'name email phoneNu');
+
+//         // Filter out appointments where service is null (not a test)
+//         const tests = appointments.filter(a => a.service);
+
+//         const total = tests.length;
+//         res.status(200).json({
+//             appointments: tests,
+//             total,
+//             page: parseInt(page),
+//             limit: parseInt(limit),
+//             totalPages: Math.ceil(total / parseInt(limit))
+//         });
+//     } catch (error) {
+//         console.error('UserController - getUserAppointments:', error);
+//         res.status(500).json({ error: 'Failed to fetch user appointments', details: error.message });
+//     }
+// };
+
+
 exports.getUserAppointments = async (req, res) => {
-    try {
-        const {
-            serviceType,
-            status,
-            appointmentDate,
-            startDate,
-            endDate,
-            sort = 'desc',
-            page = 1,
-            limit = 10
-        } = req.query;
-        const filter = { patient: req.user.userId };
-        if (serviceType) filter.service = serviceType;
-        if (status) filter.status = status;
+  try {
+    const {
+      serviceType,
+      status,
+      appointmentDate,
+      startDate,
+      endDate,
+      sort = "desc",
+      page = 1,
+      limit = 10
+    } = req.query;
 
-        // Date range filtering
-        if (startDate || endDate) {
-            filter.start = {};
-            if (startDate) {
-                const start = new Date(startDate);
-                start.setHours(0,0,0,0);
-                filter.start.$gte = start;
-            }
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23,59,59,999);
-                filter.start.$lte = end;
-            }
-        } else if (appointmentDate) {
-            let dateObj;
-            if (/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)) {
-                dateObj = new Date(appointmentDate);
-            } else if (/^\d{2}-\d{2}-\d{4}$/.test(appointmentDate)) {
-                const [day, month, year] = appointmentDate.split('-');
-                dateObj = new Date(`${year}-${month}-${day}`);
-            }
-            if (dateObj) {
-                const start = new Date(dateObj.setHours(0,0,0,0));
-                const end = new Date(dateObj.setHours(23,59,59,999));
-                filter.start = { $gte: start, $lte: end };
-            }
-        }
+    const matchStage = { patient: new mongoose.Types.ObjectId(req.user.userId) };
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-        const sortOrder = sort === 'asc' ? 1 : -1;
+    if (serviceType) matchStage.service = new mongoose.Types.ObjectId(serviceType);
+    if (status) matchStage.status = status;
 
-        // Only fetch appointments where service.type === 'test'
-        const appointments = await Appointment.find(filter)
-            .sort({ start: sortOrder })
-            .skip(skip)
-            .limit(parseInt(limit))
-            .populate({
-                path: 'service',
-                match: { type: 'treatment' },
-                select: 'name description type'
-            })
-            .populate('doctor', 'name email phoneNu');
-
-        // Filter out appointments where service is null (not a test)
-        const tests = appointments.filter(a => a.service);
-
-        const total = tests.length;
-        res.status(200).json({
-            appointments: tests,
-            total,
-            page: parseInt(page),
-            limit: parseInt(limit),
-            totalPages: Math.ceil(total / parseInt(limit))
-        });
-    } catch (error) {
-        console.error('UserController - getUserAppointments:', error);
-        res.status(500).json({ error: 'Failed to fetch user appointments', details: error.message });
+    // Date range filtering
+    if (startDate || endDate) {
+      matchStage.start = {};
+      if (startDate) {
+        const s = new Date(startDate);
+        s.setHours(0, 0, 0, 0);
+        matchStage.start.$gte = s;
+      }
+      if (endDate) {
+        const e = new Date(endDate);
+        e.setHours(23, 59, 59, 999);
+        matchStage.start.$lte = e;
+      }
+    } else if (appointmentDate) {
+      let dateObj;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)) {
+        dateObj = new Date(appointmentDate);
+      } else if (/^\d{2}-\d{2}-\d{4}$/.test(appointmentDate)) {
+        const [day, month, year] = appointmentDate.split("-");
+        dateObj = new Date(`${year}-${month}-${day}`);
+      }
+      if (dateObj) {
+        const s = new Date(dateObj.setHours(0, 0, 0, 0));
+        const e = new Date(dateObj.setHours(23, 59, 59, 999));
+        matchStage.start = { $gte: s, $lte: e };
+      }
     }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const sortOrder = sort === "asc" ? 1 : -1;
+
+    const pipeline = [
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: "services",
+          localField: "service",
+          foreignField: "_id",
+          as: "service"
+        }
+      },
+      { $unwind: "$service" },
+      { $match: { "service.type": "treatment" } }, // ✅ filter before pagination
+      {
+        $lookup: {
+          from: "users",
+          localField: "doctor",
+          foreignField: "_id",
+          as: "doctor"
+        }
+      },
+      { $unwind: { path: "$doctor", preserveNullAndEmptyArrays: true } },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [
+            { $sort: { start: sortOrder } },
+            { $skip: skip },
+            { $limit: parseInt(limit) }
+          ]
+        }
+      }
+    ];
+
+    const result = await Appointment.aggregate(pipeline);
+    const total = result[0].metadata[0]?.total || 0;
+    const appointments = result[0].data;
+
+    res.status(200).json({
+      appointments,
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages: Math.ceil(total / parseInt(limit))
+    });
+  } catch (error) {
+    console.error("UserController - getUserAppointments:", error);
+    res.status(500).json({
+      error: "Failed to fetch user appointments",
+      details: error.message
+    });
+  }
 };
+
 
 exports.updateBlockStatus = async (req, res) => {
     try {
