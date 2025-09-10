@@ -37,8 +37,9 @@ exports.bookAppointment = async (req, res) => {
 exports.getAppointments = async (req, res) => {
     try {
         // Filtering
-        const { startDate, endDate, status, service, sort = 'desc', page = 1, limit = 1 } = req.query;
+        const { startDate, endDate, status, service, type, sort = 'desc', page = 1, limit = 10 } = req.query;
         const filter = {};
+
         // Date range filtering
         if (startDate || endDate) {
             filter.start = {};
@@ -61,27 +62,42 @@ exports.getAppointments = async (req, res) => {
 
         // Sorting
         const sortOrder = sort === 'asc' ? 1 : -1;
+
+        // Populate service to filter by type
         const appointmentsRaw = await Appointment.find(filter)
             .sort({ start: sortOrder })
             .skip(skip)
             .limit(parseInt(limit))
-            .populate('patient', 'name email phoneNu').populate('doctor', 'name email phoneNu').populate('service', 'name description');
+            .populate('patient', 'name email phoneNu')
+            .populate('doctor', 'name email phoneNu')
+            .populate('service', 'name description type');
 
-        const appointments = appointmentsRaw.map(app => {
+        // Filter by service type if provided
+        let appointments = appointmentsRaw;
+        if (type) {
+            appointments = appointmentsRaw.filter(app => app.service?.type === type);
+        }
+
+        // Map patient details
+        appointments = appointments.map(app => {
             const obj = app.toObject();
             const patientDetail = obj.patient;
             delete obj.patient;
-            
-            return {...obj, 
-                patientName: patientDetail.name, 
-                patientEmail: patientDetail.email, 
+            return {
+                ...obj,
+                patientName: patientDetail.name,
+                patientEmail: patientDetail.email,
                 patientPhone: patientDetail.phoneNu,
-                userId: patientDetail._id 
+                userId: patientDetail._id
             };
         });
 
-        // Total count for pagination
-        const total = await Appointment.countDocuments(filter);
+        // Total count for pagination (with type filter)
+        let total = await Appointment.countDocuments(filter);
+        if (type) {
+            // Count only those with matching service type
+            total = appointmentsRaw.filter(app => app.service?.type === type).length;
+        }
 
         res.status(200).json({
             appointments,

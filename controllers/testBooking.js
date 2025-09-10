@@ -1,4 +1,5 @@
 const TestBooking = require("../models/TestBooking");
+const removeFile = require('../utils/removeFile');
 
 // @desc    Get all test bookings (Admin Dashboard)
 // @route   GET /api/admin/test-bookings
@@ -117,4 +118,69 @@ console.log(userId);
 console.log(err);
     res.status(500).json({ error: err.message });
   }
+};
+
+
+// Upload multiple images for an appointment
+exports.uploadReport = async (req, res) => {
+    try {
+        // console.log("reached...")
+        const { testIId } = req.params;
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No images uploaded' });
+        }
+
+        // Get image URLs
+        const imageUrls = req.files.map(file =>
+            `${req.protocol}://${req.get("host")}/uploads/${file.filename}`
+        );
+
+        // Update appointment with new images (append if already exist)
+        const tb = await TestBooking.findById(testId);
+        if (!tb) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        if (!tb.reports) appointment.reports = [];
+        tb.reports.push(...imageUrls);
+        await tb.save();
+
+        res.status(200).json({ message: 'Report uploaded successfully', images: appointment.images });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to upload report', details: error.message });
+    }
+};
+
+// Delete an image from an appointment
+exports.deleteReport = async (req, res) => {
+    try {
+        const { testId } = req.params;
+        const { pdfUrl } = req.body;
+        if (!pdfUrl) {
+            return res.status(400).json({ error: 'pdfUrl is required' });
+        }
+
+        const tb = await TestBooking.findById(testId);
+        if (!tb) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        // Remove image from array
+        const pdfIndex = tb.reports.findIndex(url => url === pdfUrl);
+        if (pdfIndex === -1) {
+            return res.status(404).json({ error: 'Pdf not found in appointment' });
+        }
+
+        tb.reports.splice(pdfIndex, 1);
+        await tb.save();
+
+        // Remove file from uploads folder
+        const filename = pdfUrl.split('/').pop();
+        removeFile(filename);
+
+        res.status(200).json({ message: 'Pdf deleted successfully', images: appointment.images });
+    } catch (error) {
+        console.error('DoctorController - deleteAppointmentImage:', error);
+        res.status(500).json({ error: 'Failed to delete pdf', details: error.message });
+    }
 };
